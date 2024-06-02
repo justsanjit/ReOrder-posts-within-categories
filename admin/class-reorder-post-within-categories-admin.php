@@ -1101,6 +1101,36 @@ class Reorder_Post_Within_Categories_Admin {
 				break;
 		}
 	}
+
+   /**
+	 * Insert an element at a specific position in an array.
+     * Negative positions are counted from the end of the array.
+     *
+	 * @since 2.16.0
+	 * @param array $array
+	 * @return string element to insert
+     * @return int position to insert the element
+	 */
+   protected  function _insert_at_position(&$array, $element, $position) {
+        // Get the count of the array
+        $array_count = count($array);
+
+        // If the position is negative, convert it to a positive position
+        if ($position < 0) {
+            $position = $array_count + $position;
+        }
+
+        // Ensure the position is within the bounds of the array
+        if ($position < 0) {
+            $position = 0;
+        } elseif ($position > $array_count) {
+            $position = $array_count;
+        }
+
+        // Insert the element at the specified position
+        array_splice($array, $position - 1, 0, $element);
+    }
+
 	/**
 	 * Rank a new post.
 	 *
@@ -1110,6 +1140,15 @@ class Reorder_Post_Within_Categories_Admin {
 	 */
 	// public function rank_post(\WP_Post $post, int $term_id){ //php 8
 	public function rank_post( $post, $term_id ) {
+        $position = apply_filters('reorder_post_within_categories_new_post_position', null, $post, $term_id);
+        if ($position !== null) {
+            $ranking = $this->_get_order($post->post_type, $term_id);
+            add_post_meta( $post->ID, '_rpwc2', $term_id, false );
+            $this->_insert_at_position($ranking, strval($post->ID), $position);
+            $this->_save_order( $post->post_type, $ranking, $term_id );
+            return;
+        }
+
 		if ( apply_filters( 'reorder_post_within_categories_new_post_first', false, $post, $term_id ) ) {
 			$ranking = $this->_get_order( $post->post_type, $term_id );
 			add_post_meta( $post->ID, '_rpwc2', $term_id, false );
